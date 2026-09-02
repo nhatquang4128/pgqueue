@@ -5,3 +5,4 @@ WHERE id = (SELECT id from jobs
             ORDER BY created_at
             LIMIT 1
             FOR UPDATE SKIP LOCKED)
+RETURNING *;
