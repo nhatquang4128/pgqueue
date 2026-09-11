@@ -33,7 +33,7 @@ while True:
         conn.commit()
         continue
     try:
-        rhandler(payload)
+        handler(payload)
     except Exception:
         query = ("""UPDATE jobs
                   SET status = CASE
@@ -46,6 +46,16 @@ while True:
         data = (job[0],)
         cur.execute(query, data)
         conn.commit()
+    else:
+        query = ("UPDATE jobs SET status = 'completed', locked_by = NULL, locked_until = NULL WHERE id = %s AND locked_by = %s;")
+        data = (job[0], job[4])
+        cur.execute(query, data)
+        conn.commit()
+
+
+
+
+
 
 
 
