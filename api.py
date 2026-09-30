@@ -24,6 +24,7 @@ def health():
         cur.execute(query)
         return {"status": "OK"}
     except Exception:
+        conn.rollback()
         raise HTTPException(status_code=503, detail="database unavailable")
 
 
@@ -35,7 +36,11 @@ def post(job: JobRequest, config: JobConfig):
                VALUES (%s, COALESCE(%s, 30), COALESCE(%s, 3), COALESCE(%s, now()))
                RETURNING id;"""
     data = (row, config.timeout_seconds, config.max_attempts, config.run_at)
-    cur.execute(query, data)
+    try:
+        cur.execute(query, data)
+    except Exception:
+        conn.rollback
+        raise HTTPException(status_code=503, detail="database unavailable")
     job_id = cur.fetchone()[0]
     conn.commit()
     return {"id" : job_id}
@@ -44,21 +49,15 @@ def post(job: JobRequest, config: JobConfig):
 def get_job(job_id: int):
     query = """SELECT id, status, attempts, max_attempts, created_at, run_at FROM jobs WHERE id = %s;"""
     data = (job_id,)
-    cur.execute(query, data)
+    try:
+        cur.execute(query, data)
+    except Exception:
+        conn.rollback()
+        raise HTTPException(status_code=503, detail="database unavailable")
     row = cur.fetchone()
     if row is None:
         raise HTTPException(status_code=404, detail="Job not found")
     else:
         return {"id": row[0], "status": row[1], "attempts": row[2], "max_attempts": row[3], "created_at": row[4], "run_at":row[5]}
-
-
-
-
-
-
-
-
-
-
 
 
