@@ -7,7 +7,12 @@ with open("claim.sql", "r") as file:
     claim_query = file.read()
 
 def claim():
-    cur.execute(claim_query)
+    try:
+        cur.execute(claim_query)
+    except Exception as e:
+        conn.rollback()
+        print(f"Query failed: {e}")
+        return None
     row = cur.fetchone()
     conn.commit()
     return row
@@ -27,14 +32,20 @@ while True:
     payload = job[1]
     handler = HANDLERS.get(payload['task'])
     if handler is None:
-        query = ("UPDATE jobs SET status = 'dead' WHERE id = %s;")
+        query = ("UPDATE jobs SET status = 'dead', locked_by = NULL, locked_until = NULL WHERE id = %s;")
         data = (job[0],)
-        cur.execute(query, data)
+        try:
+            cur.execute(query, data)
+        except Exception as e:
+            conn.rollback()
+            print(f"Query failed: {e}")
+            continue
         conn.commit()
         continue
     try:
         handler(payload)
-    except Exception:
+    except Exception as e:
+        print(f"job {job[0]} failed: {e}")
         query = ("""UPDATE jobs
                   SET status = CASE
                   WHEN attempts >= max_attempts THEN 'dead'
@@ -44,12 +55,22 @@ while True:
                   locked_until = NULL
                   WHERE id = %s;""")
         data = (job[0],)
-        cur.execute(query, data)
+        try:
+            cur.execute(query, data)
+        except Exception as e:
+            conn.rollback()
+            print(f"Query failed: {e}")
+            continue
         conn.commit()
     else:
         query = ("UPDATE jobs SET status = 'completed', locked_by = NULL, locked_until = NULL WHERE id = %s AND locked_by = %s;")
         data = (job[0], job[4])
-        cur.execute(query, data)
+        try:
+            cur.execute(query, data)
+        except Exception as e:
+            conn.rollback()
+            print(f"Query failed: {e}")
+            continue
         conn.commit()
 
 

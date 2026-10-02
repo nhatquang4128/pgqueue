@@ -7,11 +7,16 @@ with open ("reaper.sql", "r") as file:
     reaper_query = file.read()
 
 while True:
-    cur.execute(reaper_query)
-    count = cur.rowcount
-    conn.commit()
-    if count != 0:
-        print(f"Reclaimed {count} rows")
+    try:
+        cur.execute(reaper_query)
+    except Exception as e:
+        conn.rollback()
+        print(f"Query failed: {e}")
+    else:
+        count = cur.rowcount
+        conn.commit()
+        if count != 0:
+            print(f"Reclaimed {count} rows")
     time.sleep(10)
 
 
