@@ -39,7 +39,7 @@ def post(job: JobRequest, config: JobConfig):
     try:
         cur.execute(query, data)
     except Exception:
-        conn.rollback
+        conn.rollback()
         raise HTTPException(status_code=503, detail="database unavailable")
     job_id = cur.fetchone()[0]
     conn.commit()
