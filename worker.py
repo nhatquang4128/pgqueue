@@ -1,14 +1,18 @@
-import psycopg2, time
+import psycopg2, time, socket, os
 
 conn = psycopg2.connect(dbname = "pgqueue")
 cur = conn.cursor()
+WORKER_ID = f"{socket.gethostname()}-{os.getpid()}"
+
+
 
 with open("claim.sql", "r") as file:
     claim_query = file.read()
 
+
 def claim():
     try:
-        cur.execute(claim_query)
+        cur.execute(claim_query, (WORKER_ID,))
     except Exception as e:
         conn.rollback()
         print(f"Query failed: {e}")
