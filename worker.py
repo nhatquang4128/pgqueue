@@ -34,7 +34,7 @@ while True:
         time.sleep(3)
         continue
     payload = job[1]
-    handler = HANDLERS.get(payload['task'])
+    handler = HANDLERS.get(payload.get('task'))
     if handler is None:
         query = ("UPDATE jobs SET status = 'dead', locked_by = NULL, locked_until = NULL WHERE id = %s;")
         data = (job[0],)
@@ -75,7 +75,11 @@ while True:
             conn.rollback()
             print(f"Query failed: {e}")
             continue
-        conn.commit()
+        else:
+            count = cur.rowcount()
+            if count == 0:
+                print(f"lost lease on job{job[0]} - row no longer owned by this worker")
+            conn.commit()
 
 
 
