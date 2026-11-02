@@ -76,7 +76,7 @@ while True:
             print(f"Query failed: {e}")
             continue
         else:
-            count = cur.rowcount()
+            count = cur.rowcount
             if count == 0:
                 print(f"lost lease on job{job[0]} - row no longer owned by this worker")
             conn.commit()
